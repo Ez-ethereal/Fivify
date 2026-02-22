@@ -26,8 +26,8 @@ export default function FormulaDetailScreen() {
       {/* Top Zone: KaTeX-rendered formula with color highlighting */}
       <FormulaRenderer />
 
-      {/* Middle: View switcher */}
-      <View className="py-3.5 items-center">
+      {/* View switcher — minimal chrome */}
+      <View className="py-2 items-center">
         <ViewPill />
       </View>
 

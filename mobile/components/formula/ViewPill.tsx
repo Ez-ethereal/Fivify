@@ -14,7 +14,7 @@ export default function ViewPill() {
   const setViewMode = useFormulaStore((s) => s.setViewMode);
 
   return (
-    <View className="flex-row bg-brand-surface rounded-[10px] p-[3px] self-center">
+    <View className="flex-row bg-brand-surface rounded-[8px] p-[3px] self-center">
       {MODES.map(({ key, label }) => (
         <TouchableOpacity
           key={key}
@@ -41,15 +41,15 @@ export default function ViewPill() {
 
 const styles = StyleSheet.create({
   pill: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 6,
   },
   pillActive: {
     backgroundColor: "#F5F0E8",
     shadowColor: "#3D4148",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 2,
   },

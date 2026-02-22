@@ -14,21 +14,26 @@ export default function SymbolLegend() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text className="text-[13px] font-semibold text-brand-muted uppercase tracking-wide mb-1">
-        Symbol Legend
-      </Text>
+      <View className="flex-row items-center mb-3">
+        <Text className="text-[11px] font-bold text-brand-muted uppercase tracking-[1.5px]">
+          Symbol Legend
+        </Text>
+        <View className="flex-1 h-px bg-brand-sand ml-3" />
+      </View>
       {tokens.map((token, i) => {
         const color = resolveColor(token.color_id);
         const isSelected = selectedTokenIndex === i;
         return (
           <TouchableOpacity
             key={i}
-            style={[styles.row, isSelected && { backgroundColor: color + "18" }]}
+            style={[styles.card, isSelected && { borderColor: color, borderWidth: 2 }]}
             onPress={() => selectToken(isSelected ? null : i)}
             activeOpacity={0.7}
           >
-            <View style={[styles.swatch, { backgroundColor: color }]} />
-            <View className="flex-1">
+            <View style={styles.swatchContainer}>
+              <View style={[styles.swatch, { backgroundColor: color }]} />
+            </View>
+            <View style={styles.cardContent}>
               <Text
                 style={[styles.symbol, { color }]}
               >
@@ -52,19 +57,35 @@ export default function SymbolLegend() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, gap: 8 },
-  row: {
+  content: { paddingHorizontal: 20, paddingVertical: 16, gap: 12 },
+  card: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: "#EDE7DB",
+    borderWidth: 1,
+    borderColor: "#E8E0D4",
+    shadowColor: "#3D4148",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+    overflow: "hidden",
+  },
+  swatchContainer: {
+    width: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   swatch: {
     width: 12,
     height: 12,
-    borderRadius: 3,
-    marginRight: 12,
+    borderRadius: 6,
+  },
+  cardContent: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingRight: 14,
   },
   symbol: {
     fontSize: 18,

@@ -112,11 +112,11 @@ function buildHtml(displayLatex: string): string {
     align-items: center;
     min-height: 100vh;
     background: #F5F0E8;
-    padding: 16px;
+    padding: 12px 20px;
     overflow: hidden;
   }
   #formula {
-    font-size: 1.4em;
+    font-size: 1.7em;
     transform-origin: center center;
     transition: transform 0.15s ease;
   }
@@ -178,7 +178,9 @@ export default function FormulaRenderer() {
 
 const styles = StyleSheet.create({
   webview: {
-    height: 120,
+    height: 100,
     backgroundColor: "#F5F0E8",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E8E0D4",
   },
 });
