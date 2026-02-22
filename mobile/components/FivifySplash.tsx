@@ -69,7 +69,7 @@ export default function FivifySplash({ onFinished }: FivifySplashProps) {
         <Text style={styles.wordmark}>Fivify</Text>
 
         {/* Tagline */}
-        <Text style={styles.tagline}>See the math.</Text>
+        <Text style={styles.tagline}>Math, vivified.</Text>
       </Animated.View>
     </Animated.View>
   );

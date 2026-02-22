@@ -40,17 +40,12 @@ class MacroGroup(BaseModel):
         range: LaTeX string range [start, end]
         latex: The LaTeX substring for this group
         label: Semantic label (e.g., "Normalization Constant")
-        color_id: Color identifier for highlighting
-        narrative_span: Optional position in narrative text [start, end]
+        narrative_span: Position in narrative text [start, end]
     """
     range: Tuple[int, int] = Field(..., description="LaTeX string range")
     latex: str = Field(..., description="LaTeX substring")
     label: str = Field(..., description="Semantic label")
-    color_id: str = Field(..., description="Color identifier")
-    narrative_span: Optional[Tuple[int, int]] = Field(
-        None,
-        description="Position in narrative text"
-    )
+    narrative_span: Tuple[int, int] = Field(..., description="Position in narrative text")
 
 
 class MacroMap(BaseModel):
@@ -67,7 +62,7 @@ class FormulaData(BaseModel):
     """
     id: str = Field(..., description="Unique formula identifier")
     latex: str = Field(..., description="Original LaTeX string")
-    micro: MicroMap = Field(..., description="Syntax-level breakdown")
+    micro: Optional[MicroMap] = Field(None, description="Syntax-level breakdown")
     macro: MacroMap = Field(..., description="Semantic grouping")
     spark_chips: Optional[List[str]] = Field(
         None,
@@ -80,9 +75,11 @@ class FormulaData(BaseModel):
     
 class ComponentBreakdown(BaseModel):
     """A single component of a formula."""
-    symbol: str = Field(..., description="Symbol name in plain text (e.g. 'X_k')")
+    symbol: str = Field(..., description="Display symbol with \\cdot placeholders for nested children (e.g. '(\\cdot)^{2}')")
+    original_symbol: str = Field(..., description="Original LaTeX substring for range-matching against the input formula")
     counterpart: str = Field(..., description="Exact substring from explanation this symbol maps to")
     role: str = Field(..., description="What this component does, in plain English")
+    children: List[str] = Field(default_factory=list, description="Symbols of direct sub-components filling \\cdot placeholders, left-to-right")
     
 class TestParseResponse(BaseModel):
     latex: str = Field(..., description="Original Latex String")

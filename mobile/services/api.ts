@@ -5,7 +5,8 @@ import {
   OCRResponse,
   ChatResponse,
   ChatMessage,
-  TestParseResponse
+  TestParseResponse,
+  MacroGroup
 } from "@/types/formula";
 
 const client = axios.create({
@@ -38,10 +39,8 @@ export async function sendOCR(imageUri: string): Promise<OCRResponse> {
   return data;
 }
 
-export async function parseFormula(latex: string): Promise<FormulaData> {
-  const { data } = await client.post<FormulaData>("/parse", null, {
-    params: { latex },
-  });
+export async function parseFormula(response: TestParseResponse): Promise<FormulaData> {
+  const { data } = await client.post<FormulaData>("/parse", response);
   return data;
 }
 
@@ -52,6 +51,8 @@ export async function testParseFormula(latex: string): Promise<TestParseResponse
   });
   return data;
 }
+
+
 
 export async function sendChat(
   formulaId: string,

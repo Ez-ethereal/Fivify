@@ -8,7 +8,7 @@ export default function SymbolLegend() {
   const selectedTokenIndex = useFormulaStore((s) => s.selectedTokenIndex);
   const selectToken = useFormulaStore((s) => s.selectToken);
 
-  if (!formula) return null;
+  if (!formula || !formula.micro) return null;
 
   const { tokens } = formula.micro;
 

@@ -94,11 +94,19 @@ async def extract_latex(file: UploadFile = File(...)):
             
         # todo: if multiple formulas detected, there will be multiple isolateds
         # handle later
+        
+        max_conf = float("-inf")
+        res = None
         for i in range(len(result)):
             element = result[i]
             if element.get('type') == "isolated":
-                result = element
-                break
+                confidence = float(element.get('score'))
+                if ((confidence) > max_conf):
+                    max_conf = confidence
+                    res = element
+        result = res    
+        
+                
 
         # Extract LaTeX and confidence score from result
         latex = result.get('text', '')

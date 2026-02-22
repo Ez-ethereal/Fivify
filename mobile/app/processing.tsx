@@ -72,13 +72,11 @@ export default function ProcessingScreen() {
         testParseResult.components.forEach(c => {
           console.log(`  ${c.symbol} → "${c.counterpart}" (${c.role})`);
         });
-        console.log('Insights:', testParseResult.insights.map((s, i) => `  ${i + 1}. ${s}`).join('\n'));
-
-
+        console.log('Insights:', testParseResult.insights?.map((s, i) => `  ${i + 1}. ${s}`).join('\n') ?? '(none)');
 
 
         // Final parse and navigate
-        const formulaData = await parseFormula(ocrResult.latex);
+        const formulaData = await parseFormula(testParseResult);
 
         if (isMounted.current) {
           setStage("done");

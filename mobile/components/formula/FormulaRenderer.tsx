@@ -2,31 +2,65 @@ import React, { useMemo } from "react";
 import { StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { useFormulaStore } from "@/store/formulaStore";
-import { resolveColor } from "@/utils/colors";
+import { resolveColor, assignColors } from "@/utils/colors";
 import { MicroToken, MacroGroup, ViewMode } from "@/types/formula";
 
 /**
  * Inject \textcolor{hex}{...} commands into a LaTeX string so KaTeX
  * renders each token / group in its assigned color.
  *
- * Processes from right-to-left so earlier indices stay valid after each splice.
+ * Uses an event-based approach to handle nested/overlapping ranges correctly.
+ * At each character position we emit open/close tags, producing properly
+ * nested \textcolor commands (e.g. \textcolor{blue}{( \textcolor{cyan}{y_{i}} )}).
  */
 function colorizeByIndices(
   latex: string,
-  spans: { range: [number, number]; colorId: string; selected: boolean }[]
+  spans: { range: [number, number]; color: string; selected: boolean }[]
 ): string {
-  const sorted = [...spans].sort((a, b) => b.range[0] - a.range[0]);
-  let result = latex;
-  for (const { range, colorId, selected } of sorted) {
+  // Build open/close events keyed by position
+  type Evt = { pos: number; type: "open" | "close"; color: string; selected: boolean; size: number };
+  const events: Evt[] = [];
+
+  for (const { range, color, selected } of spans) {
     const [start, end] = range;
-    if (start < 0 || end > result.length) continue;
-    const segment = result.slice(start, end);
-    const color = resolveColor(colorId);
-    const wrapped = selected
-      ? `\\underline{\\textcolor{${color}}{${segment}}}`
-      : `\\textcolor{${color}}{${segment}}`;
-    result = result.slice(0, start) + wrapped + result.slice(end);
+    if (start < 0 || end > latex.length) continue;
+    const size = end - start;
+    events.push({ pos: start, type: "open", color, selected, size });
+    events.push({ pos: end, type: "close", color, selected, size });
   }
+
+  // Sort: by position, then closes before opens at the same position,
+  // among opens at the same position: larger spans first (so they wrap outer),
+  // among closes at the same position: smaller spans first (inner closes first).
+  events.sort((a, b) => {
+    if (a.pos !== b.pos) return a.pos - b.pos;
+    if (a.type !== b.type) return a.type === "close" ? -1 : 1;
+    if (a.type === "open") return b.size - a.size; // larger opens first
+    return a.size - b.size; // smaller closes first
+  });
+
+  let result = "";
+  let ei = 0;
+
+  for (let ci = 0; ci <= latex.length; ci++) {
+    // Emit all events at this position
+    while (ei < events.length && events[ei].pos === ci) {
+      const e = events[ei];
+      if (e.type === "open") {
+        result += e.selected
+          ? `\\underline{\\textcolor{${e.color}}{`
+          : `\\textcolor{${e.color}}{`;
+      } else {
+        result += e.selected ? "}}" : "}";
+      }
+      ei++;
+    }
+    // Append the current character
+    if (ci < latex.length) {
+      result += latex[ci];
+    }
+  }
+
   return result;
 }
 
@@ -42,17 +76,18 @@ function buildColoredLatex(
       latex,
       tokens.map((t, i) => ({
         range: t.index,
-        colorId: t.color_id,
+        color: resolveColor(t.color_id),
         selected: selectedIndex === i,
       }))
     );
   }
   if (viewMode === "macro") {
+    const colors = assignColors(groups.length);
     return colorizeByIndices(
       latex,
       groups.map((g, i) => ({
         range: g.range,
-        colorId: g.color_id,
+        color: colors[i],
         selected: selectedIndex === i,
       }))
     );
@@ -121,10 +156,11 @@ export default function FormulaRenderer() {
     const colored = buildColoredLatex(
       formula.latex,
       viewMode,
-      formula.micro.tokens,
+      formula.micro?.tokens ?? [],
       formula.macro.groups,
       selectedTokenIndex
     );
+    console.log("[FormulaRenderer] colored LaTeX:", colored);
     return buildHtml(colored);
   }, [formula, viewMode, selectedTokenIndex]);
 

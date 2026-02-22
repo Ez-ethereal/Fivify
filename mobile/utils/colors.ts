@@ -40,6 +40,8 @@ const ASSIGN_POOL = [
   "#0891B2", // cyan
   "#DC2626", // red
   "#CA8A04", // yellow
+  "#BE185D", // rose
+  "#0D9488", // teal
 ];
 
 /**

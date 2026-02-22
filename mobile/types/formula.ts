@@ -19,7 +19,6 @@ export interface MacroGroup {
   range: [number, number];
   latex: string;
   label: string;
-  color_id: string;
   narrative_span?: [number, number];
 }
 
@@ -31,7 +30,7 @@ export interface MacroMap {
 export interface FormulaData {
   id: string;
   latex: string;
-  micro: MicroMap;
+  micro?: MicroMap;
   macro: MacroMap;
   spark_chips?: string[];
   timestamp: string;
@@ -72,7 +71,7 @@ export interface TestParseResponse {
   latex: string;
   explanation: string;
   components: ComponentBreakdown[];
-  insights: string[];
+  insights?: string[];
 }
 
 export type ViewMode = "micro" | "macro" | "custom";

@@ -15,14 +15,14 @@ interface FormulaState {
 
 export const useFormulaStore = create<FormulaState>((set) => ({
   formula: null,
-  viewMode: "micro",
+  viewMode: "macro",
   selectedTokenIndex: null,
   history: [],
 
   setFormula: (formula) =>
     set((state) => ({
       formula,
-      viewMode: "micro",
+      viewMode: "macro",
       selectedTokenIndex: null,
       history: [formula, ...state.history],
     })),
