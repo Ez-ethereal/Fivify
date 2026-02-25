@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from app.models.formula import FormulaData, TestParseResponse
 from app.api.parse_prompt import PARSE_PROMPT
 from app.api.parse_schema import PARSE_SCHEMA
-from app.api.parse_utils import resolve_nested_symbols
+from app.api.parse_utils import merge_fragmented_components, resolve_nested_symbols
 from app.services.formulaTranslation import convertParseResponse
 import uuid
 import json
@@ -58,7 +58,8 @@ async def parse_formula_test(latex: str, request: Request):
         raise HTTPException(status_code=502, detail=f"Formula parsing failed: {e}")
     t1 = time.monotonic()
 
-    components = resolve_nested_symbols(result.get("components", []))
+    components = merge_fragmented_components(result.get("components", []), latex)
+    components = resolve_nested_symbols(components)
     if not components:
         raise HTTPException(status_code=422, detail="No components identified — LaTeX may be malformed.")
 

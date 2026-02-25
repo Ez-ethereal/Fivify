@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,43 @@ import {
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+} from "react-native-reanimated";
 import { ImageCapture } from "@/components/ImageCapture";
+import { FormulaDemo } from "@/components/FormulaDemo";
+
+function FadeInSection({
+  delay,
+  children,
+  style,
+}: {
+  delay: number;
+  children: React.ReactNode;
+  style?: object;
+}) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(12);
+
+  useEffect(() => {
+    opacity.value = withDelay(delay, withTiming(1, { duration: 450 }));
+    translateY.value = withDelay(
+      delay,
+      withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) })
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
+}
 
 export default function CaptureScreen() {
   const router = useRouter();
@@ -19,112 +55,165 @@ export default function CaptureScreen() {
   };
 
   const navigateToHistory = () => {
-    router.push("/(tabs)/history");
+    router.push("/history");
   };
 
   return (
     <View
       className="flex-1 bg-brand-cream"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingHorizontal: 28,
+      }}
     >
       <StatusBar barStyle="dark-content" />
 
-      {/* Header with Fivify wordmark matching splash screen */}
-      <View className="px-8 pt-6">
-        <View className="flex-row items-center">
-          <View className="h-[1px] flex-1 bg-brand-sand" />
-          <View className="mx-4">
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: "900",
-                color: "#3D4148",
-                letterSpacing: -0.5,
-              }}
-            >
-              Fivify
-            </Text>
-          </View>
-          <View className="h-[1px] flex-1 bg-brand-sand" />
+      {/* ── Wordmark ───────────────────────────────── */}
+      <FadeInSection delay={0}>
+        <View style={{ paddingTop: 20 }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "900",
+              color: "#3D4148",
+              letterSpacing: -0.5,
+            }}
+          >
+            Fivify
+          </Text>
         </View>
+      </FadeInSection>
+
+      {/* ── Spacer: absorbs 2/3 of leftover vertical space ── */}
+      <View style={{ flex: 2 }} />
+
+      {/* ── Hero Text ──────────────────────────────── */}
+      <FadeInSection delay={100}>
+        <Text
+          style={{
+            fontSize: 32,
+            fontWeight: "800",
+            color: "#3D4148",
+            letterSpacing: -1,
+            lineHeight: 38,
+          }}
+        >
+          Understand the math,{"\n"}
+          <Text style={{ color: "#8A827A" }}>not just the symbols</Text>
+        </Text>
+      </FadeInSection>
+
+      {/* ── Formula Demo Card ──────────────────────── */}
+      <View style={{ paddingTop: 24 }}>
+        <FormulaDemo />
       </View>
 
-      {/* Main Content */}
-      <View className="flex-1 justify-center px-8">
-        {/* Hero Section */}
-        <View className="items-center mb-10">
-          {/* Icon cluster representing math symbols */}
-          <View className="mb-6 flex-row items-center">
-            <View
-              className="w-16 h-16 rounded-2xl items-center justify-center mr-[-8px]"
-              style={{ backgroundColor: "rgba(196, 177, 154, 0.25)" }}
-            >
-              <FontAwesome name="superscript" size={28} color="#3D4148" />
-            </View>
-            <View
-              className="w-14 h-14 rounded-xl items-center justify-center z-10 border-2 border-brand-cream"
-              style={{ backgroundColor: "#EDE7DB" }}
-            >
-              <Text className="text-2xl text-brand-charcoal font-bold">∑</Text>
-            </View>
-          </View>
+      {/* ── Subtitle ───────────────────────────────── */}
+      <FadeInSection delay={700}>
+        <Text
+          style={{
+            fontSize: 15,
+            fontWeight: "500",
+            color: "#8A827A",
+            lineHeight: 22,
+            maxWidth: 300,
+            paddingTop: 16,
+            paddingBottom: 20,
+          }}
+        >
+          Capture any formula and see it come alive with color-coded
+          breakdowns
+        </Text>
+      </FadeInSection>
 
-          <Text
-            className="text-[28px] font-bold text-brand-charcoal text-center tracking-tight"
-            style={{ lineHeight: 34 }}
-          >
-            Understand the math,{"\n"}not just the symbols
-          </Text>
+      {/* ── Spacer: absorbs 1/3 of leftover vertical space ── */}
+      <View style={{ flex: 1 }} />
 
-          <Text className="text-[15px] text-brand-warmgray text-center mt-4 leading-[22px] max-w-[280px]">
-            Capture any formula and see it come alive with color-coded breakdowns
-          </Text>
-        </View>
-
-        {/* Action Buttons */}
-        <View className="w-full">
+      {/* ── Action Buttons ─────────────────────────── */}
+      <FadeInSection delay={900}>
+        <View style={{ paddingBottom: 12 }}>
           <ImageCapture onImageSelected={handleImageSelected} />
 
-          {/* Subtle divider */}
-          <View className="flex-row items-center my-5">
-            <View className="flex-1 h-[1px] bg-brand-sand" />
-            <Text className="mx-4 text-[11px] tracking-[2px] text-brand-muted uppercase">
+          {/* Divider */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginVertical: 14,
+            }}
+          >
+            <View
+              style={{ flex: 1, height: 1, backgroundColor: "#D4C5AE" }}
+            />
+            <Text
+              style={{
+                marginHorizontal: 16,
+                fontSize: 11,
+                fontWeight: "600",
+                letterSpacing: 2,
+                color: "#A89F95",
+                textTransform: "uppercase",
+              }}
+            >
               or
             </Text>
-            <View className="flex-1 h-[1px] bg-brand-sand" />
+            <View
+              style={{ flex: 1, height: 1, backgroundColor: "#D4C5AE" }}
+            />
           </View>
 
-          {/* View Your Formulas Button - matching "Choose from Gallery" contrast */}
+          {/* View Your Formulas */}
           <TouchableOpacity
-            className="flex-row items-center justify-center py-4 px-6 rounded-xl border border-brand-tan"
             onPress={navigateToHistory}
             activeOpacity={0.7}
             style={{
-              backgroundColor: "rgba(196, 177, 154, 0.15)",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingVertical: 15,
+              paddingHorizontal: 24,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: "rgba(196, 177, 154, 0.5)",
+              backgroundColor: "rgba(237, 231, 219, 0.5)",
             }}
           >
             <FontAwesome
               name="folder-open-o"
-              size={18}
-              color="#3D4148"
+              size={16}
+              color="#6B6560"
               style={{ marginRight: 10 }}
             />
-            <Text className="text-brand-charcoal text-[15px] font-semibold">
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: "#6B6560",
+              }}
+            >
               View Your Formulas
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </FadeInSection>
 
-      {/* Footer - brand tagline */}
-      <View className="px-8 pb-8">
-        <Text
-          className="text-center text-brand-warmgray"
-          style={{ fontSize: 15, fontWeight: "500", letterSpacing: 0.5, opacity: 0.7 }}
-        >
-          Math, vivified.
-        </Text>
-      </View>
+      {/* ── Footer ─────────────────────────────────── */}
+      <FadeInSection delay={1100}>
+        <View style={{ paddingBottom: 12, paddingTop: 8 }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "500",
+              color: "#A89F95",
+              letterSpacing: 0.5,
+              textAlign: "center",
+            }}
+          >
+            Math, vivified.
+          </Text>
+        </View>
+      </FadeInSection>
     </View>
   );
 }

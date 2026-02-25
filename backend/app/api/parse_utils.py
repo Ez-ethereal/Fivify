@@ -1,7 +1,24 @@
 """Post-processing utilities for LLM parse responses."""
+import logging
 import re
 
+logger = logging.getLogger("app.api.parse_utils")
+
 _TOKEN_RE = re.compile(r'\\[a-zA-Z@]+|[{}()\[\]]|[a-zA-Z0-9]|[^\s]')
+
+# Bare operators that should never be standalone components
+_SYNTACTIC_GLUE = {
+    "+", "-", "=", "\\cdot", "\\times", "\\div", "\\pm", "\\mp",
+    "\\longleftarrow", "\\leftarrow", "\\rightarrow", "\\longrightarrow",
+    "\\Longleftarrow", "\\Rightarrow", "\\Longrightarrow",
+    "\\approx", "\\neq", "\\leq", "\\geq", "\\equiv", "\\sim", "\\propto",
+}
+
+# Bare exponents/subscripts: ^{...} or _{...} with nothing else
+_BARE_MODIFIER_RE = re.compile(
+    r'^[\^_]\{[^{}]*\}$'   # ^{2}, _{i}, ^{n+1}, etc.
+    r'|^[\^_][a-zA-Z0-9]$' # ^2, _i, etc.
+)
 
 
 def _tokenize(latex: str) -> list[str]:
@@ -28,6 +45,46 @@ def _tokens_to_latex(tokens: list[str]) -> str:
         if tok.startswith("\\") and i + 1 < len(tokens) and tokens[i + 1][0].isalpha():
             out.append(" ")
     return "".join(out)
+
+
+def _is_syntactic_glue(symbol: str) -> bool:
+    """Check if a symbol is syntactic glue (bare operator or bare modifier)."""
+    stripped = symbol.strip()
+    return stripped in _SYNTACTIC_GLUE or bool(_BARE_MODIFIER_RE.match(stripped))
+
+
+def merge_fragmented_components(components: list[dict], latex: str) -> list[dict]:
+    """
+    Remove components that are syntactic glue (bare operators, bare exponents/subscripts).
+
+    A glue component is dropped if any other component's symbol already contains
+    it as a substring — the parent component captures its meaning. If no parent
+    exists, the glue component is kept as a conservative fallback.
+
+    Must run BEFORE resolve_nested_symbols() to avoid corrupting \\cdot placeholders.
+    """
+    if len(components) < 2:
+        return components
+
+    glue_indices: set[int] = set()
+    for i, comp in enumerate(components):
+        sym = comp.get("symbol", "")
+        if not _is_syntactic_glue(sym):
+            continue
+        # Check if any other component's symbol contains this glue symbol
+        stripped = sym.strip()
+        for j, other in enumerate(components):
+            if j == i:
+                continue
+            if stripped in other.get("symbol", ""):
+                glue_indices.add(i)
+                break
+
+    if glue_indices:
+        dropped = [components[i].get("symbol", "") for i in glue_indices]
+        logger.info("Dropping %d glue component(s): %s", len(dropped), dropped)
+
+    return [c for i, c in enumerate(components) if i not in glue_indices]
 
 
 def resolve_nested_symbols(components: list[dict]) -> list[dict]:

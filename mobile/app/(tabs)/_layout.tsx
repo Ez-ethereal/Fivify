@@ -9,7 +9,6 @@ export default function TabLayout() {
         tabBarStyle: { display: 'none' },
       }}>
       <Tabs.Screen name="index" />
-      <Tabs.Screen name="history" />
     </Tabs>
   );
 }

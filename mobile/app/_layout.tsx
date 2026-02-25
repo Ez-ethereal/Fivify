@@ -93,6 +93,7 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? FivifyDarkTheme : FivifyLightTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="history" options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="formula/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
