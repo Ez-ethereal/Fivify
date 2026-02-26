@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import re
 import logging
 
@@ -29,12 +29,9 @@ def _find_symbol_in_latex(symbol: str, latex: str, command_mask: list[bool]) -> 
     Symbols containing \\ are LaTeX expressions that intentionally reference
     commands, so they bypass the mask entirely.
     """
-    # LaTeX expressions (contain \) should match normally — they intentionally
-    # reference commands, so the mask must not block them.
     if "\\" in symbol:
         return latex.find(symbol)
 
-    # For bare symbols (no \), skip matches inside command names
     start = 0
     while start <= len(latex) - len(symbol):
         pos = latex.find(symbol, start)
@@ -47,25 +44,84 @@ def _find_symbol_in_latex(symbol: str, latex: str, command_mask: list[bool]) -> 
 
 
 def assignIndices(component: ComponentBreakdown, latex: str, explanation: str,
-                  command_mask: Optional[list[bool]] = None) -> Optional[List[int]]:
-    """Return [narrative_start, narrative_end, latex_start, latex_end], or None if either lookup fails."""
-    # indices in explanation
+                  command_mask: Optional[list[bool]] = None) -> Optional[dict]:
+    """
+    Return {narrative_span, ranges, latex_parts} or None if the narrative lookup fails.
+
+    Each symbol in the component's symbol list is located independently
+    in the LaTeX string. Symbols that can't be found are skipped (warned).
+    """
     startIndex = explanation.find(component.counterpart)
     if startIndex == -1:
         logger.warning("Counterpart not found in explanation — dropping component. counterpart=%r, explanation=%r", component.counterpart, explanation[:120])
         return None
     endIndex = startIndex + len(component.counterpart)
 
-    # indices in latex — skip matches inside LaTeX command names
     if command_mask is None:
         command_mask = _build_command_mask(latex)
-    tex_start = _find_symbol_in_latex(component.original_symbol, latex, command_mask)
-    if tex_start == -1:
-        logger.warning("Original symbol not found in latex — dropping component. symbol=%r, latex=%r", component.original_symbol, latex[:120])
-        return None
-    tex_end = tex_start + len(component.original_symbol)
 
-    return [startIndex, endIndex, tex_start, tex_end]
+    ranges: List[Tuple[int, int]] = []
+    latex_parts: List[str] = []
+    for sym in component.symbol:
+        tex_start = _find_symbol_in_latex(sym, latex, command_mask)
+        if tex_start == -1:
+            logger.warning("Symbol not found in latex — skipping. symbol=%r, latex=%r", sym, latex[:120])
+            continue
+        tex_end = tex_start + len(sym)
+        ranges.append((tex_start, tex_end))
+        latex_parts.append(latex[tex_start:tex_end])
+
+    if not ranges:
+        logger.warning("No symbols found in latex for component — dropping. symbols=%r", component.symbol)
+        return None
+
+    return {
+        "narrative_span": (startIndex, endIndex),
+        "ranges": ranges,
+        "latex_parts": latex_parts,
+    }
+
+
+def _range_contains(parent: Tuple[int, int], child: Tuple[int, int]) -> bool:
+    """True if parent range strictly contains child range (not equal)."""
+    return parent[0] <= child[0] and child[1] <= parent[1] and (parent[1] - parent[0]) > (child[1] - child[0])
+
+
+def _compute_children(groups: List[MacroGroup]) -> None:
+    """
+    Compute parent→children relationships based on range containment.
+
+    A group B is a child of group A if ANY of B's ranges is contained within
+    ANY of A's ranges. Only DIRECT children are recorded — if B is inside A
+    and C is inside B, then C is NOT a child of A (it's a grandchild).
+    """
+    n = len(groups)
+    # For each group, find all groups whose ranges are contained within it
+    # contains[i] = set of group indices whose ranges are inside group i
+    contains: list[set[int]] = [set() for _ in range(n)]
+
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            # Check if any of j's ranges is inside any of i's ranges
+            for pr in groups[i].ranges:
+                for cr in groups[j].ranges:
+                    if _range_contains(pr, cr):
+                        contains[i].add(j)
+                        break
+                if j in contains[i]:
+                    break
+
+    # Filter to direct children only: remove grandchildren
+    for i in range(n):
+        direct = set(contains[i])
+        for child in list(contains[i]):
+            # If child itself contains other members of contains[i],
+            # those are grandchildren — remove them from i's direct set
+            grandchildren = contains[child] & contains[i]
+            direct -= grandchildren
+        groups[i].children = sorted(direct)
 
 
 def convertParseResponse(response: TestParseResponse) -> MacroMap:
@@ -77,12 +133,15 @@ def convertParseResponse(response: TestParseResponse) -> MacroMap:
         if indices is None:
             continue
         group = MacroGroup(
-            range=(indices[2], indices[3]),
-            latex=latex[indices[2]:indices[3]],
-            label=component.role,
-            narrative_span=(indices[0], indices[1])
+            ranges=indices["ranges"],
+            latex=indices["latex_parts"],
+            label=component.counterpart,
+            narrative_span=indices["narrative_span"],
         )
         groups.append(group)
+
+    # Compute parent→children nesting from range containment
+    _compute_children(groups)
 
     return MacroMap(
         groups=groups,

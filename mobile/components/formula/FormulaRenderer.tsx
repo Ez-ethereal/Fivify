@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { useFormulaStore } from "@/store/formulaStore";
 import { resolveColor, assignColors } from "@/utils/colors";
@@ -85,11 +85,13 @@ function buildColoredLatex(
     const colors = assignColors(groups.length);
     return colorizeByIndices(
       latex,
-      groups.map((g, i) => ({
-        range: g.range,
-        color: colors[i],
-        selected: selectedIndex === i,
-      }))
+      groups.flatMap((g, i) =>
+        g.ranges.map((range) => ({
+          range: range as [number, number],
+          color: colors[i],
+          selected: selectedIndex === i,
+        }))
+      )
     );
   }
   return latex;
@@ -99,7 +101,7 @@ function buildHtml(displayLatex: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
 <script
@@ -107,36 +109,33 @@ function buildHtml(displayLatex: string): string {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
+    background: #F5F0E8;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: #F5F0E8;
-    padding: 12px 20px;
-    overflow: hidden;
   }
   #formula {
-    font-size: 1.7em;
-    transform-origin: center center;
-    transition: transform 0.15s ease;
+    font-size: 1.4em;
   }
+  .katex-display { margin: 0 !important; }
 </style>
 </head>
 <body>
   <div id="formula"></div>
   <script>
     try {
+      var el = document.getElementById("formula");
       katex.render(
         ${JSON.stringify(displayLatex)},
-        document.getElementById("formula"),
+        el,
         { displayMode: true, throwOnError: false, trust: true }
       );
-      // Scale down if the rendered formula overflows the viewport
-      var el = document.getElementById("formula");
-      var maxWidth = document.body.clientWidth - 32; // account for body padding
-      var naturalWidth = el.scrollWidth;
-      if (naturalWidth > maxWidth) {
-        el.style.transform = "scale(" + (maxWidth / naturalWidth) + ")";
+      // Shrink font until formula fits viewport width
+      var size = 1.4;
+      while (el.scrollWidth > window.innerWidth && size > 0.5) {
+        size -= 0.1;
+        el.style.fontSize = size + "em";
       }
     } catch (e) {
       document.getElementById("formula").textContent = e.message;
@@ -160,27 +159,30 @@ export default function FormulaRenderer() {
       formula.macro.groups,
       selectedTokenIndex
     );
-    console.log("[FormulaRenderer] colored LaTeX:", colored);
     return buildHtml(colored);
   }, [formula, viewMode, selectedTokenIndex]);
 
   return (
-    <WebView
-      style={styles.webview}
-      originWhitelist={["*"]}
-      source={{ html }}
-      scrollEnabled={false}
-      showsHorizontalScrollIndicator={false}
-      showsVerticalScrollIndicator={false}
-    />
+    <View style={styles.container}>
+      <WebView
+        style={styles.webview}
+        originWhitelist={["*"]}
+        source={{ html }}
+        scrollEnabled={false}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  webview: {
-    height: 100,
+  container: {
+    height: 200,
     backgroundColor: "#F5F0E8",
     borderBottomWidth: 1,
     borderBottomColor: "#E8E0D4",
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: "#F5F0E8",
   },
 });

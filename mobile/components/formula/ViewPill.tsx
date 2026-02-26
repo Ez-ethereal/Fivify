@@ -41,7 +41,7 @@ export default function ViewPill() {
 
 const styles = StyleSheet.create({
   pill: {
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 16,
     borderRadius: 6,
   },

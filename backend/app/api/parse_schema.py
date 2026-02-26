@@ -11,11 +11,13 @@ PARSE_SCHEMA = {
                 "items": {
                     "type": "object",
                     "properties": {
-                        "symbol": {"type": "string"},
-                        "role": {"type": "string"},
+                        "symbol": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                         "counterpart": {"type": "string"},
                     },
-                    "required": ["symbol", "role", "counterpart"],
+                    "required": ["symbol", "counterpart"],
                     "additionalProperties": False,
                 },
             },

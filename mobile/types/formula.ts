@@ -16,10 +16,11 @@ export interface MicroMap {
 }
 
 export interface MacroGroup {
-  range: [number, number];
-  latex: string;
+  ranges: [number, number][];
+  latex: string[];
   label: string;
   narrative_span?: [number, number];
+  children: number[];
 }
 
 export interface MacroMap {
@@ -62,7 +63,7 @@ export interface ChatResponse {
 }
 
 export interface ComponentBreakdown {
-  symbol: string;
+  symbol: string[];
   counterpart: string;
   role: string;
 }

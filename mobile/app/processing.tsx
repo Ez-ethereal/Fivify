@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
-import { sendOCR, parseFormula, testParseFormula } from "@/services/api";
+import { sendOCR, parseFormula, testParseFormula, streamParseFormula } from "@/services/api";
 import { useFormulaStore } from "@/store/formulaStore";
 
 // Processing stages
@@ -66,13 +66,6 @@ export default function ProcessingScreen() {
 
         // Test parse endpoint
         const testParseResult = await testParseFormula(ocrResult.latex);
-        console.log('\n=== PARSE RESULT ===');
-        console.log('Explanation:', testParseResult.explanation);
-        console.log('Components:');
-        testParseResult.components.forEach(c => {
-          console.log(`  ${c.symbol} → "${c.counterpart}" (${c.role})`);
-        });
-        console.log('Insights:', testParseResult.insights?.map((s, i) => `  ${i + 1}. ${s}`).join('\n') ?? '(none)');
 
 
         // Final parse and navigate

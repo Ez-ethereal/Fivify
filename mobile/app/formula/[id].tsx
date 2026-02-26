@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { Stack } from "expo-router";
 import { useFormulaStore } from "@/store/formulaStore";
 import FormulaRenderer from "@/components/formula/FormulaRenderer";
@@ -21,18 +21,22 @@ export default function FormulaDetailScreen() {
 
   return (
     <View className="flex-1 bg-brand-cream">
-      <Stack.Screen options={{ title: "Formula" }} />
+      <Stack.Screen options={{ title: "", headerTitle: "" }} />
 
-      {/* Top Zone: KaTeX-rendered formula with color highlighting */}
+      {/* Top Zone: KaTeX-rendered formula (auto-sized) */}
       <FormulaRenderer />
 
-      {/* View switcher — minimal chrome */}
-      <View className="py-2 items-center">
+      {/* View switcher — compact chrome */}
+      <View className="py-1 items-center">
         <ViewPill />
       </View>
 
-      {/* Bottom Zone: context view */}
-      <View className="flex-1">
+      {/* Content zone — scrollable for graceful degradation on long narratives */}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
         {viewMode === "micro" && <SymbolLegend />}
         {viewMode === "macro" && <NarrativeView />}
         {viewMode === "custom" && (
@@ -42,7 +46,7 @@ export default function FormulaDetailScreen() {
             </Text>
           </View>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }

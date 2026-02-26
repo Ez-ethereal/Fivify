@@ -37,15 +37,16 @@ class MacroGroup(BaseModel):
     Represents a semantic group in the macro (meaning-level) view.
 
     Attributes:
-        range: LaTeX string range [start, end]
-        latex: The LaTeX substring for this group
+        ranges: List of LaTeX string ranges [[start, end], ...] for each symbol in the group
+        latex: The LaTeX substrings for this group
         label: Semantic label (e.g., "Normalization Constant")
         narrative_span: Position in narrative text [start, end]
     """
-    range: Tuple[int, int] = Field(..., description="LaTeX string range")
-    latex: str = Field(..., description="LaTeX substring")
+    ranges: List[Tuple[int, int]] = Field(..., description="LaTeX string ranges for each symbol")
+    latex: List[str] = Field(..., description="LaTeX substrings")
     label: str = Field(..., description="Semantic label")
     narrative_span: Tuple[int, int] = Field(..., description="Position in narrative text")
+    children: List[int] = Field(default_factory=list, description="Indices of direct child groups")
 
 
 class MacroMap(BaseModel):
@@ -75,11 +76,10 @@ class FormulaData(BaseModel):
     
 class ComponentBreakdown(BaseModel):
     """A single component of a formula."""
-    symbol: str = Field(..., description="Display symbol with \\cdot placeholders for nested children (e.g. '(\\cdot)^{2}')")
-    original_symbol: str = Field(..., description="Original LaTeX substring for range-matching against the input formula")
+    symbol: List[str] = Field(..., description="LaTeX substrings for this component (1 or more disjoint spans)")
     counterpart: str = Field(..., description="Exact substring from explanation this symbol maps to")
     role: str = Field(..., description="What this component does, in plain English")
-    children: List[str] = Field(default_factory=list, description="Symbols of direct sub-components filling \\cdot placeholders, left-to-right")
+    children: List[int] = Field(default_factory=list, description="Indices of direct child components (into the components array)")
     
 class TestParseResponse(BaseModel):
     latex: str = Field(..., description="Original Latex String")

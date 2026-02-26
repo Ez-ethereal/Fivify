@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { View, Text, Pressable } from "react-native";
 import { WebView } from "react-native-webview";
+import { useFocusEffect } from "expo-router";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -101,6 +102,27 @@ function buildDemoHtml(cardHeight: number): string {
 
 const DEMO_HTML = buildDemoHtml(CARD_HEIGHT);
 
+// JS snippet to re-trigger KaTeX render in an existing WebView context.
+// Called on screen focus to restore content if WKWebView purged it.
+const RERENDER_JS = `
+try {
+  var el = document.getElementById("formula");
+  if (el && (!el.innerHTML || el.innerHTML.trim() === "")) {
+    katex.render(
+      ${JSON.stringify(COLORED_LATEX)},
+      el,
+      { displayMode: true, throwOnError: false, trust: true }
+    );
+    var maxWidth = document.body.clientWidth - 24;
+    var naturalWidth = el.scrollWidth;
+    if (naturalWidth > maxWidth) {
+      el.style.transform = "scale(" + (maxWidth / naturalWidth) + ")";
+    }
+  }
+} catch(e) {}
+true;
+`;
+
 // ── Narrative (back face) ────────────────────────
 
 const NARRATIVE: { text: string; color?: string }[] = [
@@ -121,6 +143,15 @@ export function FormulaDemo() {
   const flip = useSharedValue(0); // 0 = front, 1 = back
   const isFlipped = useRef(false);
   const teaserDone = useRef(false);
+  const webViewRef = useRef<WebView>(null);
+
+  // Re-inject KaTeX render when screen regains focus (fixes blank after nav-back).
+  // injectJavaScript runs inside the existing WebView context — no remount, no flash.
+  useFocusEffect(
+    useCallback(() => {
+      webViewRef.current?.injectJavaScript(RERENDER_JS);
+    }, [])
+  );
 
   // Card entrance
   const cardOpacity = useSharedValue(0);
@@ -229,12 +260,16 @@ export function FormulaDemo() {
           >
             <View style={{ flex: 1 }}>
               <WebView
+                ref={webViewRef}
                 style={{ flex: 1, backgroundColor: "transparent" }}
                 originWhitelist={["*"]}
                 source={{ html: DEMO_HTML }}
                 scrollEnabled={false}
                 showsHorizontalScrollIndicator={false}
                 showsVerticalScrollIndicator={false}
+                onContentProcessDidTerminate={() =>
+                  webViewRef.current?.reload()
+                }
               />
             </View>
             <Text
